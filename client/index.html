@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Test 1</title>
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <div id = "error-container"></div>
+    <h1>Chat Application</h1>
+    <label for="name">Username:</label>
+    <input type="text" id="name" name="name" value="" placeholder="Enter your name!">
+    <button type="button" name="button" onclick="setUserName()">Register</button>
+
+    <script>
+        const client = io()
+        var user;
+        var room;
+
+        
+
+        client.on('userSet', (data) => {
+            user = data.username;
+            document.body.innerHTML = `<h1>${user}</h1><label for="room">Choose a room: </label><select name="room" id="room"><option value="covid19">Covid 19</option>
+                <option value="School">School</option><option value="Work">Work</option></select>\
+            <button type = "button" name = "button" onclick = "joinRoom()">Join Room</button>`;
+        });
+
+        client.on('userExists', (data) => {
+            document.getElementById('error-container').innerHTML = data;
+        })
+        
+
+        client.on('roomSet', (data) => {
+            room = data.room;
+            document.body.innerHTML = `<h1>User: ${user}</h1><h2>Room: ${room}</h2><input type = "text" id = "message">\
+            <button type = "button" name = "button" onclick = "sendMessage()">Send</button>\
+            <button type = "button" name = "button" onclick = "leaveRoom()">Leave Room Chat</button>\
+            <div id = "message-container"></div>`;
+        });
+
+        client.on('roomDel', (data) => {
+            room = data.room;
+            document.body.innerHTML = `<h1>User: ${user} left room ${room}</h1></h1><label for="room">Choose a room: </label><select name="room" id="room"><option value="covid19">Covid 19</option>
+                <option value="School">School</option><option value="Work">Work</option></select>\
+            <button type = "button" name = "button" onclick = "joinRoom()">Join Room</button>`;
+        });
+
+
+        client.on('newmsg', (data) => {
+            if(user) {
+            document.getElementById('message-container').innerHTML += '<div><b>' + 
+                data.user + '</b>: ' + data.message + '</div>'
+            }
+        });
+        function sendMessage() {
+            var msg = document.getElementById('message').value;
+            if(msg) {
+                client.emit('msg', {message: msg, user: user});
+            }
+
+            $.post('http://localhost:3001/messages')
+        }
+
+        function leaveRoom(){
+            client.emit('leaveroom', room);
+        }
+
+        function setUserName(){
+            client.emit('newUser', document.getElementById('name').value)
+        }
+
+        function joinRoom(){
+            client.emit('joinroom', document.getElementById('room').value)
+        }
+    </script>
+</body>
+</html>
